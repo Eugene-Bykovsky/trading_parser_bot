@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -25,9 +26,9 @@ async def send_deals_with_delay(bot: Bot) -> None:
     insider_parser.fetch_content()
     list_deals = insider_parser.parse_all_deals()
     for deal in list_deals:
-        await asyncio.sleep(2)
-        await bot.send_message(chat_id=534211907, text=deal)
-        exit()
+        formatted_deal = json.dumps(deal, indent=2)
+        await asyncio.sleep(5)
+        await bot.send_message(chat_id=534211907, text=formatted_deal)
 
 
 async def start_bot() -> None:

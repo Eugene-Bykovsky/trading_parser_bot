@@ -1,7 +1,7 @@
 from requests import get, RequestException
 from bs4 import BeautifulSoup
 
-from config import URL
+from config import URL, deal_fields
 
 
 class SiteParser:
@@ -27,20 +27,9 @@ class SiteParser:
                 for deal_row in table.find_all('tr'):
                     cells = deal_row.find_all('td')
                     if cells:
-                        deals = {
-                            'report_date': cells[1].get_text(),
-                            'trade_date': cells[2].get_text(),
-                            'ticker': cells[3].get_text(),
-                            'company_name': cells[4].get_text(),
-                            'insider_name': cells[5].text.strip(),
-                            'position': cells[6].text.strip(),
-                            'trade_type': cells[7].text.strip(),
-                            'price': cells[8].text.strip(),
-                            'quantity': cells[9].text.strip(),
-                            'owned': cells[10].text.strip(),
-                            'own': cells[11].text.strip(),
-                            'value': cells[12].text.strip(),
-                        }
+                        deal = {field: cells[i].get_text() for i, field in
+                                enumerate(deal_fields, start=1)}
+                        deals.append(deal)
                 return deals
             except AttributeError:
                 print("No table with class tinytable.")
