@@ -9,6 +9,7 @@ from aiogram.utils.markdown import hbold
 
 from parser import SiteParser
 from config import TOKEN, CHAT_ID
+from utils import format_telegram_message
 
 dp = Dispatcher()
 
@@ -26,9 +27,9 @@ async def send_deals_with_delay(bot: Bot) -> None:
     insider_parser.fetch_content()
     list_deals = insider_parser.parse_all_deals()
     for deal in list_deals:
-        formatted_deal = json.dumps(deal, indent=2)
+        await bot.send_message(chat_id=CHAT_ID,
+                               text=format_telegram_message(deal))
         await asyncio.sleep(5)
-        await bot.send_message(chat_id=534211907, text=formatted_deal)
 
 
 async def start_bot() -> None:
