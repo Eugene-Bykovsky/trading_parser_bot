@@ -1,4 +1,7 @@
-def format_telegram_message(data):
+import json
+
+
+def format_telegram_message(data: dict) -> str:
     telegram_message = (
         f"Новая инсайдерская сделка:\n"
         f" 🗓Дата регистрации отчета: {data['report_date']}\n"
@@ -15,3 +18,17 @@ def format_telegram_message(data):
         f"💰Общая сумма сделки: {data['value']}\n"
     )
     return telegram_message
+
+
+def read_data(filename):
+    try:
+        with open(filename, "r", encoding='utf8') as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+    return data
+
+
+def write_data(data, filename):
+    with open(filename, "w", encoding='utf8') as f:
+        json.dump(data, f, ensure_ascii=False)

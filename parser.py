@@ -30,7 +30,7 @@ class SiteParser:
                         deal = {field: cells[i].get_text() for i, field in
                                 enumerate(deal_fields, start=1)}
                         deals.append(deal)
-                return deals
+                return deals[::-1]
             except AttributeError:
                 print("No table with class tinytable.")
         else:
