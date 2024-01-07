@@ -1,6 +1,4 @@
 import asyncio
-import schedule
-
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
@@ -24,17 +22,11 @@ async def command_start_handler(message: Message) -> None:
 
 
 async def send_deals_with_delay(obj_bot) -> None:
+    new_deals_found = False
     insider_parser = SiteParser()
     insider_parser.fetch_content()
     list_deals = insider_parser.parse_all_deals()
     await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Парсер запущен!')
-
-    current_time = datetime.now().time()
-    print(current_time)
-    if current_time < time(8, 0) or current_time > time(22, 0):
-        # Вне рабочего времени, не отправлять сообщения
-        await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Я запустился, но не беспокою группу!')
-        return
 
     last_sent_deal = read_data('last_sent_deal.json')
 
@@ -46,35 +38,37 @@ async def send_deals_with_delay(obj_bot) -> None:
         deal_date = datetime.strptime(deal['report_date'], '%Y-%m-%d %H:%M:%S')
 
         if deal_date <= last_sent_date:
-            await obj_bot.send_message(chat_id=CHAT_ID_ADMIN,
-                                       text='Новых сделок пока нет.')
-            return
-        else:
-            await obj_bot.send_message(chat_id=CHAT_ID,
-                                       text=format_telegram_message(deal))
+            continue  # Пропускаем уже обработанные сделки
+
+        try:
+            new_deals_found = True
+            await obj_bot.send_message(chat_id=CHAT_ID, text=format_telegram_message(deal))
             last_sent_deal = deal
+            write_data(last_sent_deal, 'last_sent_deal.json')
+            await asyncio.sleep(5)
+        except Exception as e:
+            print(f"Error sending deal: {e}")
 
-        await asyncio.sleep(5)
-
-    write_data(last_sent_deal, 'last_sent_deal.json')
+    print(new_deals_found)
+    if not new_deals_found:
+        await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Новых сделок пока нет!')
 
 
 async def start_bot(obj_bot) -> None:
     await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Бот запущен!')
-    await send_deals_with_delay(obj_bot)
-    await dp.start_polling(obj_bot)
-
-
-def run_schedule():
-    schedule.every(60).minutes.do(
-        lambda: asyncio.run(send_deals_with_delay(bot)))
 
     while True:
-        schedule.run_pending()
-        asyncio.sleep(5)
-
+        current_time = datetime.now().time()
+        print(current_time)
+        if time(22, 0) >= current_time <= time(8, 0):
+            await asyncio.sleep(3600)  # Перерыв в 1 час, если текущее время внутри указанного интервала
+        else:
+            try:
+                await send_deals_with_delay(obj_bot)
+                await asyncio.sleep(3600)
+            except Exception as e:
+                print(f"Error in bot loop: {e}")
 
 if __name__ == '__main__':
     bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
     asyncio.run(start_bot(bot))
-    run_schedule()
