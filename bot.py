@@ -1,16 +1,15 @@
 import asyncio
-
-from datetime import datetime, time
-
 import schedule
+
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
+from datetime import datetime, time
 
+from config import TOKEN, CHAT_ID, CHAT_ID_ADMIN
 from parser import SiteParser
-from config import TOKEN, CHAT_ID
 from utils import format_telegram_message, read_data, write_data
 
 dp = Dispatcher()
@@ -28,11 +27,13 @@ async def send_deals_with_delay(obj_bot) -> None:
     insider_parser = SiteParser()
     insider_parser.fetch_content()
     list_deals = insider_parser.parse_all_deals()
+    await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Парсер запущен!')
 
     current_time = datetime.now().time()
     print(current_time)
-    if current_time < time(8, 0) or current_time > time(19, 0):
+    if current_time < time(8, 0) or current_time > time(22, 0):
         # Вне рабочего времени, не отправлять сообщения
+        await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Я запустился, но не беспокою группу!')
         return
 
     last_sent_deal = read_data('last_sent_deal.json')
@@ -44,7 +45,11 @@ async def send_deals_with_delay(obj_bot) -> None:
     for deal in list_deals:
         deal_date = datetime.strptime(deal['report_date'], '%Y-%m-%d %H:%M:%S')
 
-        if deal_date > last_sent_date:
+        if deal_date <= last_sent_date:
+            await obj_bot.send_message(chat_id=CHAT_ID_ADMIN,
+                                       text='Новых сделок пока нет.')
+            return
+        else:
             await obj_bot.send_message(chat_id=CHAT_ID,
                                        text=format_telegram_message(deal))
             last_sent_deal = deal
@@ -55,6 +60,7 @@ async def send_deals_with_delay(obj_bot) -> None:
 
 
 async def start_bot(obj_bot) -> None:
+    await obj_bot.send_message(chat_id=CHAT_ID_ADMIN, text='Бот запущен!')
     await send_deals_with_delay(obj_bot)
     await dp.start_polling(obj_bot)
 
@@ -65,7 +71,7 @@ def run_schedule():
 
     while True:
         schedule.run_pending()
-        asyncio.sleep(1)
+        asyncio.sleep(5)
 
 
 if __name__ == '__main__':
