@@ -59,8 +59,10 @@ async def start_bot(obj_bot) -> None:
 
     while True:
         current_time = datetime.now().time()
-        print(current_time)
-        if time(22, 0) >= current_time <= time(8, 0):
+
+        if time(20, 0) >= current_time <= time(7, 0):
+            await obj_bot.send_message(chat_id=CHAT_ID_ADMIN,
+                                       text='Ночной режим, не беспокою!')
             await asyncio.sleep(3600)  # Перерыв в 1 час, если текущее время внутри указанного интервала
         else:
             try:
